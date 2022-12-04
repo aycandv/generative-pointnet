@@ -2,6 +2,7 @@ import os
 import torch
 import argparse
 import logging
+
 from tqdm import tqdm
 from termcolor import colored
 from pathlib import Path
@@ -12,6 +13,7 @@ from models.pointnet import PointNet
 from utils.dataset import PointCloudData
 from utils.transforms import train_transforms, PointSampler, Normalize, RandRotation_z, RandomNoise, ToTensor
 from models.loss import pointnetloss
+
 
 def train(args):
     # Create dataset
