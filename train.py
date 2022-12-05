@@ -2,6 +2,7 @@ import os
 import torch
 import argparse
 import logging
+import wandb
 
 from tqdm import tqdm
 from termcolor import colored
@@ -14,6 +15,9 @@ from utils.dataset import PointCloudData
 from utils.transforms import train_transforms, PointSampler, Normalize, RandRotation_z, RandomNoise, ToTensor
 from models.loss import pointnetloss
 
+
+
+wandb.init(project="generative-pointnet", entity="kevi")
 
 def train(args):
     # Create dataset
@@ -34,6 +38,8 @@ def train(args):
 
     best_acc = 0
     best_model = model
+
+    wandb.watch(model, criterion, log="all")
 
     for epoch in range(args.epochs): 
         model.train()
@@ -56,16 +62,18 @@ def train(args):
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
 
+            running_loss += loss.item()
             pbar.set_postfix({'loss': '%.3f' % (running_loss / 10), 'acc': '%.3f' % (100 * correct / total)})
 
-            # print statistics
-            running_loss += loss.item()
             if i % 10 == 9:    # print every 10 mini-batches
                 pbar.set_postfix({'loss': '%.3f' % (running_loss / 10), 'acc': '%.3f' % (100 * correct / total)})
                 running_loss = 0.0
+        
+        wandb.log({"train/loss": loss.item(), "train/acc": 100 * correct / len(train_dataset)})
 
         model.eval()
         correct = total = 0
+        running_loss = 0.0
 
         # validation
         if valid_loader:
@@ -73,14 +81,17 @@ def train(args):
             with torch.no_grad():
                 for data in pbar_val:
                     inputs, labels = data['pointcloud'].to(args.device).float(), data['category'].to(args.device)
-                    outputs, __, __ = model(inputs.transpose(1,2))
+                    outputs, m3x3, m64x64 = model(inputs.transpose(1,2))
                     _, predicted = torch.max(outputs.data, 1)
                     total += labels.size(0)
                     correct += (predicted == labels).sum().item()
+                    loss = criterion(outputs, labels, m3x3, m64x64)
+                    running_loss += loss.item()
                     pbar_val.set_postfix(acc=correct/total)
             val_acc = 100. * correct / total
 
             pbar_val.set_postfix(acc=val_acc)
+            wandb.log({"val/acc": val_acc, "val/loss": running_loss / len(valid_loader)})
 
         
         # Save best model
@@ -111,6 +122,8 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s: %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
     # log hyperparameters
     logging.info(args)
+
+    wandb.config.update(args)
 
 
     train(args)
