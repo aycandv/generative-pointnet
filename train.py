@@ -33,6 +33,7 @@ def train(args):
     criterion = pointnetloss
 
     best_acc = 0
+    best_model = model
 
     for epoch in range(args.epochs): 
         model.train()
@@ -85,6 +86,7 @@ def train(args):
         # Save best model
         if val_acc > best_acc:
             best_acc = val_acc
+            best_model = model
             if not os.path.exists(args.save_dir):
                 os.makedirs(args.save_dir, exist_ok=True)
             torch.save(model.state_dict(), args.save_dir + "/best_model.pth")
@@ -106,7 +108,7 @@ if __name__ == '__main__':
     args.add_argument('--save_dir', type=str, default='checkpoints', help='path to save model')
     args = args.parse_args()
 
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s: %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
     # log hyperparameters
     logging.info(args)
 
