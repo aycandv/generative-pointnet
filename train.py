@@ -63,10 +63,10 @@ def train(args):
             correct += (predicted == labels).sum().item()
 
             running_loss += loss.item()
-            pbar.set_postfix({'loss': '%.3f' % (running_loss / 10), 'acc': '%.3f' % (100 * correct / total)})
+            # pbar.set_postfix({'loss': '%.3f' % (running_loss / 10), 'acc': '%.3f' % (100 * correct / total)})
 
             if i % 10 == 9:    # print every 10 mini-batches
-                pbar.set_postfix({'loss': '%.3f' % (running_loss / 10), 'acc': '%.3f' % (100 * correct / total)})
+                pbar.set_postfix({'loss': '%.3f' % (running_loss / total), 'acc': '%.3f' % (100 * correct / total)})
                 running_loss = 0.0
         
         wandb.log({"train/loss": loss.item(), "train/acc": 100 * correct / len(train_dataset)})
@@ -87,10 +87,10 @@ def train(args):
                     correct += (predicted == labels).sum().item()
                     loss = criterion(outputs, labels, m3x3, m64x64)
                     running_loss += loss.item()
-                    pbar_val.set_postfix(acc=correct/total)
+                    # pbar_val.set_postfix(loss=running_loss /total , acc=correct/total)
             val_acc = 100. * correct / total
 
-            pbar_val.set_postfix(acc=val_acc)
+            pbar_val.set_postfix(loss=running_loss / len(valid_loader) , acc=correct/total)
             wandb.log({"val/acc": val_acc, "val/loss": running_loss / len(valid_loader)})
 
         
