@@ -13,7 +13,8 @@ from torch.utils.data import DataLoader
 from models.pointnet import PointNet
 from utils.dataset import PointCloudData
 from utils.transforms import train_transforms, PointSampler, Normalize, RandRotation_z, RandomNoise, ToTensor
-from models.loss import pointnetloss
+from models.generate_model import generate_model
+from metrics.generate_loss import generate_loss
 
 
 
@@ -28,13 +29,13 @@ def train(args):
     train_loader = DataLoader(dataset=train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
     valid_loader = DataLoader(dataset=valid_dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
     # Create model
-    model = PointNet().to(args.device)
+    model = generate_model(args.model, args.device)
 
     # Create optimizer
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 
     # Create loss function
-    criterion = pointnetloss
+    criterion = generate_loss(type=args.model)
 
     best_acc = 0
     best_model = model
@@ -105,7 +106,6 @@ def train(args):
             logging.info(colored(f"Best model saved at epoch {epoch+1} with acc {best_acc}", "green"))
 
 
-
 if __name__ == '__main__':
     args = argparse.ArgumentParser()
     args.add_argument('--root_dir', type=str, default='data/ModelNet10', help='path to dataset')
@@ -117,6 +117,7 @@ if __name__ == '__main__':
     args.add_argument('--weight_decay', type=float, default=0.0005, help='weight decay')
     args.add_argument('--device', type=str, default='cuda', help='device to use')
     args.add_argument('--save_dir', type=str, default='checkpoints', help='path to save model')
+    args.add_argument('--model', type=str, default='pointnet', help='model to use')
     args = args.parse_args()
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s: %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
