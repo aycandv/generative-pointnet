@@ -1,5 +1,5 @@
 import torch
-from pytorch3d.loss import chamfer_distance
+from chamferdist import ChamferDistance
 
 
 def _pointnet_loss(outputs, labels, m3x3, m64x64, criterion, alpha=0.0001):
@@ -62,6 +62,5 @@ def pointnet_generative_loss(outputs, labels, m3x3, m64x64, alpha=0.0001):
         (Variable) loss
     """
     return (
-        _pointnet_loss(outputs, labels, m3x3, m64x64, torch.nn.MSELoss, alpha)
-        + chamfer_distance(outputs, labels)[0]
+        ChamferDistance()(outputs, labels)
     )
