@@ -1,4 +1,8 @@
 checkpoints
+.vscode
+wandb
+*.ipynb
+*.ipynb_checkpoints
 # ignore all nested files in data directory except download.sh
 data/*
 
