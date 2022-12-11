@@ -133,7 +133,7 @@ def train(args):
                         "acc": "%.3f" % (100 * acc),
                     }
                 )
-                running_loss = 0.0
+                
 
                 if args.model == "pointnet-ae":
                     train_x = inputs[0].detach().cpu().numpy()[:, 0]
@@ -154,9 +154,11 @@ def train(args):
                             "pred/pointcloud": fig_pred,
                         }
                     )
+                
+                running_loss = 0.0
 
         wandb.log(
-            {"train/loss": loss.item(), "train/acc": 100 * correct / len(train_dataset)}
+            {"train/loss": running_loss / total, "train/acc": 100 * correct / total}
         )
 
         model.eval()
