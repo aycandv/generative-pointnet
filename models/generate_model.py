@@ -1,5 +1,5 @@
 from models.pointnet import PointNet
-
+from models.pointnet_ae import PointNetAE
 
 def generate_model(type: str, device: str = 'cpu'): 
     """Generate model based on type
@@ -26,7 +26,7 @@ def generate_model(type: str, device: str = 'cpu'):
     if type == 'pointnet':
         return PointNet().to(device)
     elif type == 'pointnet-ae':
-        # return PointNetAE().to(device)
+        return PointNetAE().to(device)
         raise NotImplementedError
     elif type == 'pvcnn':
         # return PVCNN().to(device)
