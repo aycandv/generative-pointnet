@@ -22,7 +22,7 @@ class InvTransform(nn.Module):
         # x.shape == (bs,1024)
         x = F.relu(self.bn1(self.fc1(x)))
         x = F.relu(self.bn2(self.fc2(x)))
-        x = F.tanh(self.fc3(x))
+        x = self.fc3(x)
         x = x.view(-1, 1024, 3)
         return x
 

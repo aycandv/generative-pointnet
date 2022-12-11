@@ -22,15 +22,15 @@ def generate_loss(type: str):
     >>> loss = generate_loss('pvcnn-res-ae')
     """
 
-    if type == 'pointnet':
+    if type == "pointnet":
         return pointnet_classification_loss
-    elif type == 'pointnet-ae':
+    elif type == "pointnet-ae":
         return pointnet_generative_loss
-    elif type == 'pvcnn':
+    elif type == "pvcnn":
         return pointnet_classification_loss
-    elif type == 'pvcnn-ae':
+    elif type == "pvcnn-ae":
         return pointnet_generative_loss
-    elif type == 'pvcnn-res-ae':
+    elif type == "pvcnn-res-ae":
         return pointnet_generative_loss
     else:
-        raise ValueError('Invalid model type')
+        raise ValueError("Invalid model type")

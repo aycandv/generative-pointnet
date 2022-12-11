@@ -22,13 +22,24 @@ from utils.transforms import (
 )
 from models.generate_model import generate_model
 from metrics.generate_loss import generate_loss
+from metrics.calculate_acc import calculate_acc
+from utils.visualize import pcshow, visualize_rotate
 
 
 wandb.init(project="generative-pointnet", entity="kevi")
 
 
-def train(args):
-    # Create dataset
+def get_dataloader(args):
+    """Get dataloader for training and validation
+
+    Args:
+        args (argparse.Namespace): Arguments
+
+    Returns:
+        train_loader (torch.utils.data.DataLoader): Training dataloader
+        valid_loader (torch.utils.data.DataLoader): Validation dataloader
+    """
+
     train_dataset = PointCloudData(
         args.root_dir, folder="train", transform=train_transforms
     )
@@ -36,7 +47,6 @@ def train(args):
         args.root_dir, valid=True, folder="test", transform=train_transforms
     )
 
-    # Create dataloader
     train_loader = DataLoader(
         dataset=train_dataset,
         batch_size=args.batch_size,
@@ -49,14 +59,32 @@ def train(args):
         shuffle=False,
         num_workers=args.num_workers,
     )
+
+    return train_loader, valid_loader
+
+
+def get_loss(args):
+    """Get loss function
+
+    Args:
+        args (argparse.Namespace): Arguments
+
+    Returns:
+        criterion (torch.nn.modules.loss): Loss function
+    """
+    criterion = generate_loss(type=args.model)
+    return criterion
+
+
+def train(args):
+    # Create dataset
+    train_loader, valid_loader = get_dataloader(args)
     # Create model
     model = generate_model(args.model, args.device)
-
     # Create optimizer
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
-
     # Create loss function
-    criterion = generate_loss(type=args.model)
+    criterion = get_loss(args)
 
     best_acc = 0
     best_model = model
@@ -92,20 +120,40 @@ def train(args):
             loss.backward()
             optimizer.step()
 
-            # _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
-            # correct += (predicted == labels).sum().item()
+            acc = calculate_acc(args, inputs, labels, outputs)
+            correct += acc * labels.size(0)
 
             running_loss += loss.item()
-            # pbar.set_postfix({'loss': '%.3f' % (running_loss / 10), 'acc': '%.3f' % (100 * correct / total)})
 
             if i % 10 == 9:  # print every 10 mini-batches
                 pbar.set_postfix(
                     {
                         "loss": "%.3f" % (running_loss / total),
+                        "acc": "%.3f" % (100 * acc),
                     }
                 )
                 running_loss = 0.0
+
+                if args.model == "pointnet-ae":
+                    train_x = inputs[0].detach().cpu().numpy()[:, 0]
+                    train_y = inputs[0].detach().cpu().numpy()[:, 1]
+                    train_z = inputs[0].detach().cpu().numpy()[:, 2]
+                    pred_x = outputs[0].detach().cpu().numpy()[:, 0]
+                    pred_y = outputs[0].detach().cpu().numpy()[:, 1]
+                    pred_z = outputs[0].detach().cpu().numpy()[:, 2]
+
+                    fig_train = pcshow(train_x, train_y, train_z)
+                    fig_pred = pcshow(pred_x, pred_y, pred_z)
+
+                    wandb.log(
+                        {
+                            "train/loss": running_loss / total,
+                            "train/acc": 100 * acc,
+                            "train/pointcloud": fig_train,
+                            "pred/pointcloud": fig_pred,
+                        }
+                    )
 
         wandb.log(
             {"train/loss": loss.item(), "train/acc": 100 * correct / len(train_dataset)}
@@ -134,17 +182,15 @@ def train(args):
                         "category"
                     ].to(args.device)
                     outputs, m3x3, m64x64 = model(inputs.transpose(1, 2))
-                    # _, predicted = torch.max(outputs.data, 1)
                     total += labels.size(0)
-                    # correct += (predicted == labels).sum().item()
                     loss = criterion(outputs, inputs, m3x3, m64x64)
                     running_loss += loss.item()
-                    # pbar_val.set_postfix(loss=running_loss /total , acc=correct/total)
+
+                    acc = calculate_acc(args, inputs, labels, outputs)
+                    correct += acc * labels.size(0)
             val_acc = 100.0 * correct / total
 
-            pbar_val.set_postfix(
-                loss=running_loss / len(valid_loader), acc=correct / total
-            )
+            pbar_val.set_postfix(loss=running_loss / len(valid_loader), acc=val_acc)
             wandb.log(
                 {"val/acc": val_acc, "val/loss": running_loss / len(valid_loader)}
             )

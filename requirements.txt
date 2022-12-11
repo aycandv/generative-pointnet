@@ -11,10 +11,10 @@ idna==3.4
 kiwisolver==1.4.4
 matplotlib==3.6.2
 numpy==1.23.5
-# nvidia-cuda-nvrtc-cu11==11.7.99
-# nvidia-cublas-cu11==11.10.3.66
-# nvidia-cuda-runtime-cu11==11.7.99
-# nvidia-cudnn-cu11==8.5.0.96
+nvidia-cuda-nvrtc-cu11==11.7.99
+nvidia-cublas-cu11==11.10.3.66
+nvidia-cuda-runtime-cu11==11.7.99
+nvidia-cudnn-cu11==8.5.0.96
 packaging==22.0
 pathtools==0.1.2
 Pillow==9.3.0
@@ -37,3 +37,4 @@ typing-extensions==4.4.0
 urllib3==1.26.13
 wandb==0.13.6
 termcolor==1.1.0
+pytorch3d==0.7.1
