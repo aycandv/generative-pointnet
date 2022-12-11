@@ -10,7 +10,7 @@ from .transforms import default_transforms
 class PointCloudData(Dataset):
     def __init__(self, root_dir, valid=False, folder="train", transform=default_transforms()):
         self.root_dir = root_dir
-        folders = [dir for dir in sorted(os.listdir(root_dir)) if os.path.isdir(root_dir)]
+        folders = [dir for dir in sorted(os.listdir(root_dir)) if os.path.isdir(root_dir) if os.path.isdir(os.path.join(root_dir, dir))]
         self.classes = {folder: i for i, folder in enumerate(folders)}
         self.transforms = transform if not valid else default_transforms()
         self.valid = valid
