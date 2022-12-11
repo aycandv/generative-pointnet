@@ -10,12 +10,12 @@ class InvTransform(nn.Module):
     def __init__(self):
         super().__init__()
         self.fc1 = nn.Linear(in_features=1024, out_features=1024)
-        self.fc2 = nn.Linear(in_features=1024, out_features=1024)
-        self.fc3 = nn.Linear(in_features=1024, out_features=1024 * 3)
+        self.fc2 = nn.Linear(in_features=1024, out_features=1024 * 2)
+        self.fc3 = nn.Linear(in_features=1024 * 2, out_features=1024 * 3)
 
         # batch norm
         self.bn1 = nn.BatchNorm1d(1024)
-        self.bn2 = nn.BatchNorm1d(1024)
+        self.bn2 = nn.BatchNorm1d(1024 * 2)
         self.bn3 = nn.BatchNorm1d(1024)
 
     def forward(self, x):
