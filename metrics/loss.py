@@ -62,5 +62,7 @@ def pointnet_generative_loss(outputs, labels, m3x3, m64x64, alpha=0.0001):
         (Variable) loss
     """
     return (
-        ChamferDistance()(outputs, labels)
+        _pointnet_loss(
+            outputs, labels, m3x3, m64x64, torch.nn.MSELoss, alpha
+        ) + ChamferDistance()(outputs, labels)
     )

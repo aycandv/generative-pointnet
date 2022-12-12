@@ -9,6 +9,7 @@ from termcolor import colored
 from pathlib import Path
 from torchvision import transforms
 from torch.utils.data import DataLoader
+from chamferdist import ChamferDistance
 
 from models.pointnet import PointNet
 from utils.dataset import PointCloudData
@@ -84,7 +85,7 @@ def train(args):
     # Create optimizer
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
     # Create loss function
-    criterion = get_loss(args)
+    criterion = ChamferDistance()
 
     best_acc = 0
     best_model = model
@@ -116,7 +117,8 @@ def train(args):
             optimizer.zero_grad()
             outputs, m3x3, m64x64 = model(inputs.transpose(1, 2))
 
-            loss = criterion(outputs, inputs, m3x3, m64x64)
+            # loss = criterion(outputs, inputs, m3x3, m64x64)
+            loss = criterion(outputs, inputs, bidirectional=True) + criterion(inputs, outputs, bidirectional=True)
             loss.backward()
             optimizer.step()
 
@@ -185,7 +187,8 @@ def train(args):
                     ].to(args.device)
                     outputs, m3x3, m64x64 = model(inputs.transpose(1, 2))
                     total += labels.size(0)
-                    loss = criterion(outputs, inputs, m3x3, m64x64)
+                    # loss = criterion(outputs, inputs, m3x3, m64x64)
+                    loss = criterion(outputs, inputs, bidirectional=True) + criterion(inputs, outputs, bidirectional=True)
                     running_loss += loss.item()
 
                     acc = calculate_acc(args, inputs, labels, outputs)
