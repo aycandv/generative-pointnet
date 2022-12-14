@@ -24,7 +24,7 @@ from utils.transforms import (
 from models.generate_model import generate_model
 from metrics.generate_loss import generate_loss
 from metrics.calculate_acc import calculate_acc
-from utils.visualize import pcshow, visualize_rotate
+from utils.visualize import pcshow, visualize_rotate, visualize_subplots
 
 
 wandb.init(project="generative-pointnet", entity="kevi")
@@ -88,6 +88,7 @@ def train(args):
     criterion = ChamferDistance()
 
     best_acc = 0
+    best_loss = 1e10
     best_model = model
 
     wandb.watch(model, criterion, log="all", log_graph=True)
@@ -117,7 +118,6 @@ def train(args):
             optimizer.zero_grad()
             outputs, m3x3, m64x64 = model(inputs.transpose(1, 2))
 
-            # loss = criterion(outputs, inputs, m3x3, m64x64)
             loss = criterion(outputs, inputs, bidirectional=True) + criterion(inputs, outputs, bidirectional=True)
             loss.backward()
             optimizer.step()
@@ -132,35 +132,25 @@ def train(args):
                 pbar.set_postfix(
                     {
                         "loss": "%.3f" % (running_loss / total),
-                        "acc": "%.3f" % (100 * acc),
                     }
                 )
                 
 
-                if args.model == "pointnet-ae":
-                    train_x = inputs[0].detach().cpu().numpy()[:, 0]
-                    train_y = inputs[0].detach().cpu().numpy()[:, 1]
-                    train_z = inputs[0].detach().cpu().numpy()[:, 2]
-                    pred_x = outputs[0].detach().cpu().numpy()[:, 0]
-                    pred_y = outputs[0].detach().cpu().numpy()[:, 1]
-                    pred_z = outputs[0].detach().cpu().numpy()[:, 2]
+        fig = visualize_subplots(
+            inputs[:8].detach().cpu(),
+            outputs[:8].detach().cpu(),
+        )
 
-                    fig_train = pcshow(train_x, train_y, train_z)
-                    fig_pred = pcshow(pred_x, pred_y, pred_z)
-
-                    wandb.log(
-                        {
-                            "train/loss": running_loss / total,
-                            "train/acc": 100 * acc,
-                            "train/pointcloud": fig_train,
-                            "pred/pointcloud": fig_pred,
-                        }
-                    )
+        wandb.log({
+                "train/loss": running_loss / total,
+                "train/pointcloud": fig
+            }
+        )
                 
-                running_loss = 0.0
+                # running_loss = 0.0
 
         wandb.log(
-            {"train/loss": running_loss / total, "train/acc": 100 * correct / total}
+            {"train/loss": running_loss / total,} # "train/acc": 100 * correct / total}
         )
 
         model.eval()
@@ -193,25 +183,25 @@ def train(args):
 
                     acc = calculate_acc(args, inputs, labels, outputs)
                     correct += acc * labels.size(0)
+                    pbar_val.set_postfix(loss=running_loss / total)
             val_acc = 100.0 * correct / total
 
-            pbar_val.set_postfix(loss=running_loss / len(valid_loader), acc=val_acc)
+            pbar_val.set_postfix(loss=running_loss / len(valid_loader))
             wandb.log(
-                {"val/acc": val_acc, "val/loss": running_loss / len(valid_loader)}
+                {"val/loss": running_loss / len(valid_loader)}
             )
 
+        val_loss = running_loss / len(valid_loader)
         # Save best model
-        if val_acc > best_acc:
-            best_acc = val_acc
+        if val_loss < best_loss:
+            best_loss = val_loss
             best_model = model
             if not os.path.exists(args.save_dir):
                 os.makedirs(args.save_dir, exist_ok=True)
             torch.save(model.state_dict(), args.save_dir + "/best_model.pth")
             # log best model info with green color
             logging.info(
-                colored(
-                    f"Best model saved at epoch {epoch+1} with acc {best_acc}", "green"
-                )
+                colored(f"Best model saved at epoch {epoch+1} with loss {best_loss}", "green")
             )
 
 

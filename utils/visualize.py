@@ -1,5 +1,37 @@
 import plotly.graph_objects as go
 import numpy as np
+from plotly.subplots import make_subplots
+
+
+def visualize_subplots(x, y):
+    """Visualize point cloud
+
+    Args:
+        fig_train list(go.Figure): List of go.Figure objects
+        fig_pred list(go.Figure): List of go.Figure objects
+
+    Returns:
+        fig (go.Figure): Visualized point cloud
+    """
+    num_samples = 5 if x.shape[0] > 5 else x.shape[0]
+    fig = make_subplots(
+        rows=2,
+        cols=num_samples,
+        specs=[
+            [{"type": "scene", "showticklabels": False} for _ in range(num_samples)],
+            [{"type": "scene", "showticklabels": False} for _ in range(num_samples)],
+        ],
+    )
+
+    for i in range(num_samples):
+        fig_train = pcshow(x[i, :, 0].unsqueeze(0), x[i, :, 1].unsqueeze(0), x[i, :, 2].unsqueeze(0))
+        fig_pred = pcshow(y[i, :, 0].unsqueeze(0), y[i, :, 1].unsqueeze(0), y[i, :, 2].unsqueeze(0))
+        for t in fig_train.data:
+            fig.add_trace(t, row=1, col=i+1)
+        for p in fig_pred.data:
+            fig.add_trace(p, row=2, col=i+1)
+
+    return fig
 
 
 def visualize_rotate(data):
@@ -67,7 +99,7 @@ def pcshow(xs, ys, zs):
         ys (np.ndarray): y coordinates
         zs (np.ndarray): z coordinates
     """
-    data = [go.Scatter3d(x=xs, y=ys, z=zs, mode="markers")]
+    data = [go.Scatter3d(x=x, y=y, z=z, mode="markers") for x, y, z in zip(xs, ys, zs)]
     fig = visualize_rotate(data)
     fig.update_traces(
         marker=dict(size=2, line=dict(width=2, color="DarkSlateGrey")),
